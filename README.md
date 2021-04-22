@@ -166,6 +166,27 @@ You may use the following properties (typically in application.yml) to configure
 |                       | .disable-auto-fetching | false          | Disables immediate fetching for external tasks after creating the client. To start fetching ExternalTaskClient.start() must be called. |
 |                       | .disable-backoff-strategy | false        | Disables the client-side backoff strategy. On invocation, the configuration option backoffStrategy is ignored. Please bear in mind that disabling the client-side backoff can lead to heavy load situations on engine side. To avoid this, please specify an appropriate long async-response-timeout. |
 
+You can also configure the subscriptions via configuration, with the same properties as the annotation. You can then reference the configuration with the annotation by using the topic name, e.g.: 
+
+```yaml
+camunda:
+  external-client:
+    subscriptions:
+      my-topic:
+        lock-duration: 29000
+        variables:
+          - conf-test-one
+          - conf-test-two
+        local-variables: true
+```
+
+```java
+@Singleton
+@ExternalTaskSubscription(topicName = "my-topic")
+class ExampleHandlerConfiguration : ExternalTaskHandler{
+ ...
+}
+```
 
 # 🏆Advanced Topics
 

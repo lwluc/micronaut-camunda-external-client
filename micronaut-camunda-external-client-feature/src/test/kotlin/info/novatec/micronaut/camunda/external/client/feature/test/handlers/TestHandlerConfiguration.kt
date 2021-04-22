@@ -13,21 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package info.novatec.micronaut.camunda.external.client.feature.test
+package info.novatec.micronaut.camunda.external.client.feature.test.handlers
 
-import info.novatec.micronaut.camunda.external.client.feature.ExternalClientCustomizer
-import io.micronaut.context.annotation.Replaces
-import org.camunda.bpm.client.ExternalTaskClientBuilder
+import info.novatec.micronaut.camunda.external.client.feature.ExternalTaskSubscription
+import org.camunda.bpm.client.task.ExternalTask
+import org.camunda.bpm.client.task.ExternalTaskHandler
+import org.camunda.bpm.client.task.ExternalTaskService
 import javax.inject.Singleton
 
 /**
  * @author Martin Sawilla
  */
 @Singleton
-@Replaces(ExternalClientCustomizer::class)
-class TestExternalClientCustomization: ExternalClientCustomizer {
+@ExternalTaskSubscription(topicName = "test-topic-configuration")
+class TestHandlerConfiguration : ExternalTaskHandler {
 
-    override fun customize(builder: ExternalTaskClientBuilder) {
-        builder.usePriority(false)
+    override fun execute(externalTask: ExternalTask?, externalTaskService: ExternalTaskService?) {
+        // does nothing
     }
 }

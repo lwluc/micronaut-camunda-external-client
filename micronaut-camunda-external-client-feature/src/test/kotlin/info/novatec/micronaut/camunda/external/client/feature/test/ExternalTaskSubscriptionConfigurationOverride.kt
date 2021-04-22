@@ -15,8 +15,6 @@
  */
 package info.novatec.micronaut.camunda.external.client.feature.test
 
-import io.micronaut.context.annotation.Property
-import io.micronaut.context.annotation.PropertySource
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest
 import org.assertj.core.api.Assertions.assertThat
 import org.camunda.bpm.client.ExternalTaskClient
@@ -26,28 +24,17 @@ import org.junit.jupiter.api.Test
 import javax.inject.Inject
 
 /**
- * @author Martin Sawilla
+ * @author Luc Weinbrecht
  */
-@MicronautTest
-class ExternalTaskSubscriptionTest {
+@MicronautTest(propertySources = ["classpath:application-annotation-override.yml"])
+class ExternalTaskSubscriptionConfigurationOverride {
 
     @Inject
     lateinit var externalTaskClient: ExternalTaskClient
 
     @Test
-    fun `test topic subscription with Annotation`() {
+    fun `test topic subscription Configuration overrides Annotation`() {
         val topicName = "test-topic-annotation"
-        val subscription = this.getSubscription(topicName)
-
-        assertThat(subscription!!.topicName).isEqualTo(topicName)
-        assertThat(subscription.lockDuration).isEqualTo(19000)
-        assertThat(subscription.variableNames).containsExactly("test-one", "test-two")
-        assertThat(subscription.isLocalVariables).isTrue
-    }
-
-    @Test
-    fun `test topic subscription with Configuration`() {
-        val topicName = "test-topic-configuration"
         val subscription = this.getSubscription(topicName)
 
         assertThat(subscription!!.topicName).isEqualTo(topicName)

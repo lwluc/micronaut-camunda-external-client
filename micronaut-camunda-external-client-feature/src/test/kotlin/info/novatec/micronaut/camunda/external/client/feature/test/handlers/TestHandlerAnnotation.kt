@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package info.novatec.micronaut.camunda.external.client.feature.test
+package info.novatec.micronaut.camunda.external.client.feature.test.handlers
 
 import info.novatec.micronaut.camunda.external.client.feature.ExternalTaskSubscription
 import org.camunda.bpm.client.task.ExternalTask
@@ -26,12 +26,12 @@ import javax.inject.Singleton
  */
 @Singleton
 @ExternalTaskSubscription(
-    topicName = "test-topic",
+    topicName = "test-topic-annotation",
     lockDuration = 19000,
     variables = ["test-one", "test-two"],
     localVariables = true
 )
-class TestHandler : ExternalTaskHandler {
+class TestHandlerAnnotation : ExternalTaskHandler {
 
     override fun execute(externalTask: ExternalTask?, externalTaskService: ExternalTaskService?) {
         // does nothing

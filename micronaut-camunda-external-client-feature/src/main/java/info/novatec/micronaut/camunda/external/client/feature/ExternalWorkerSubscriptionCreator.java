@@ -19,6 +19,7 @@ import io.micronaut.context.BeanContext;
 import io.micronaut.context.annotation.Context;
 import io.micronaut.core.annotation.AnnotationValue;
 import io.micronaut.inject.BeanDefinition;
+import io.micronaut.inject.qualifiers.Qualifiers;
 import org.camunda.bpm.client.ExternalTaskClient;
 import org.camunda.bpm.client.task.ExternalTaskHandler;
 import org.camunda.bpm.client.topic.TopicSubscriptionBuilder;
@@ -51,15 +52,25 @@ public class ExternalWorkerSubscriptionCreator {
         ExternalTaskHandler externalTaskHandler = beanContext.getBean(beanDefinition);
         AnnotationValue<ExternalTaskSubscription> annotationValue = beanDefinition.getAnnotation(ExternalTaskSubscription.class);
 
-        if (annotationValue != null) {
-            buildTopicSubscription(externalTaskHandler, externalTaskClient, annotationValue);
-        } else {
+        if (annotationValue == null) {
             log.warn("Skipping subscription. Could not find Annotation ExternalTaskSubscription on class {}", beanDefinition.getName());
+        } else {
+            TopicSubscriptionBuilder builder = buildTopicSubscription(externalTaskHandler, externalTaskClient, annotationValue);
+
+            //noinspection OptionalGetWithoutIsPresent
+            String topicName = annotationValue.stringValue("topicName").get();
+
+            if (beanContext.containsBean(TopicConfigurationProperty.class, Qualifiers.byName(topicName))) {
+                TopicConfigurationProperty topicConfigurationProperties = beanContext.getBean(TopicConfigurationProperty.class, Qualifiers.byName(topicName));
+                overrideAnnotationWithConfigurationProperties(topicConfigurationProperties, builder);
+            }
+
+            builder.open();
+            log.info("External task client subscribed to topic '{}'", topicName);
         }
     }
 
-    protected void buildTopicSubscription(ExternalTaskHandler externalTaskHandler, ExternalTaskClient client, AnnotationValue<ExternalTaskSubscription> annotationValue) {
-
+    protected TopicSubscriptionBuilder buildTopicSubscription(ExternalTaskHandler externalTaskHandler, ExternalTaskClient client, AnnotationValue<ExternalTaskSubscription> annotationValue) {
         //noinspection OptionalGetWithoutIsPresent
         TopicSubscriptionBuilder builder = client.subscribe(annotationValue.stringValue("topicName").get());
 
@@ -68,7 +79,7 @@ public class ExternalWorkerSubscriptionCreator {
         annotationValue.longValue("lockDuration").ifPresent(builder::lockDuration);
 
         annotationValue.get("variables", String[].class).ifPresent(it -> {
-            if(!it[0].equals("")){
+            if (!it[0].equals("")) {
                 builder.variables(it);
             }
         });
@@ -80,7 +91,7 @@ public class ExternalWorkerSubscriptionCreator {
         annotationValue.stringValue("processDefinitionId").ifPresent(builder::processDefinitionId);
 
         annotationValue.get("processDefinitionIdIn", String[].class).ifPresent(it -> {
-            if(!it[0].equals("")){
+            if (!it[0].equals("")) {
                 builder.processDefinitionIdIn(it);
             }
         });
@@ -88,7 +99,7 @@ public class ExternalWorkerSubscriptionCreator {
         annotationValue.stringValue("processDefinitionKey").ifPresent(builder::processDefinitionKey);
 
         annotationValue.get("processDefinitionKeyIn", String[].class).ifPresent(it -> {
-            if(!it[0].equals("")) {
+            if (!it[0].equals("")) {
                 builder.processDefinitionKeyIn(it);
             }
         });
@@ -102,17 +113,69 @@ public class ExternalWorkerSubscriptionCreator {
         });
 
         annotationValue.get("tenantIdIn", String[].class).ifPresent(it -> {
-            if(!it[0].equals("")) {
+            if (!it[0].equals("")) {
                 builder.tenantIdIn(it);
             }
         });
 
         annotationValue.booleanValue("includeExtensionProperties").ifPresent(builder::includeExtensionProperties);
 
-        builder.open();
+        return builder;
+    }
 
-        //noinspection OptionalGetWithoutIsPresent
-        log.info("External task client subscribed to topic '{}'", annotationValue.stringValue("topicName").get());
+    protected void overrideAnnotationWithConfigurationProperties(TopicConfigurationProperty topicConfiguration, TopicSubscriptionBuilder builder) {
+        log.info("External configuration for topic {} found. Overriding annotation values", topicConfiguration.getTopicName());
 
+        if (topicConfiguration.getLockDuration() != null) {
+            builder.lockDuration(topicConfiguration.getLockDuration());
+        }
+
+        if (topicConfiguration.getVariables() != null) {
+            builder.variables(topicConfiguration.getVariables());
+        }
+
+        if (topicConfiguration.getVariables() != null) {
+            builder.variables(topicConfiguration.getVariables());
+        }
+
+        if (topicConfiguration.getLocalVariables() != null) {
+            builder.localVariables(topicConfiguration.getLocalVariables());
+        }
+
+        if (topicConfiguration.getBusinessKey() != null) {
+            builder.businessKey((topicConfiguration.getBusinessKey()));
+        }
+
+        if (topicConfiguration.getProcessDefinitionId() != null) {
+            builder.processDefinitionId(topicConfiguration.getProcessDefinitionId());
+        }
+
+        if (topicConfiguration.getProcessDefinitionIdIn() != null) {
+            builder.processDefinitionIdIn(topicConfiguration.getProcessDefinitionIdIn());
+        }
+
+        if (topicConfiguration.getProcessDefinitionKey() != null) {
+            builder.processDefinitionKey(topicConfiguration.getProcessDefinitionKey());
+        }
+
+        if (topicConfiguration.getProcessDefinitionKeyIn() != null) {
+            builder.processDefinitionKeyIn(topicConfiguration.getProcessDefinitionKeyIn());
+        }
+
+        if (topicConfiguration.getProcessDefinitionVersionTag() != null) {
+            builder.processDefinitionVersionTag(topicConfiguration.getProcessDefinitionVersionTag());
+        }
+
+        if (topicConfiguration.getWithoutTenantId() != null && topicConfiguration.getWithoutTenantId()) {
+            builder.withoutTenantId();
+        }
+
+        if (topicConfiguration.getTenantIdIn() != null) {
+            builder.tenantIdIn(topicConfiguration.getTenantIdIn());
+        }
+
+        if (topicConfiguration.getIncludeExtensionProperties() != null && topicConfiguration.getIncludeExtensionProperties()) {
+            builder.includeExtensionProperties(topicConfiguration.getIncludeExtensionProperties());
+        }
     }
 }

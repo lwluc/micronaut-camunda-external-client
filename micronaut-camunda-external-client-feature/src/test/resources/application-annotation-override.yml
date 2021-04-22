@@ -3,11 +3,11 @@ micronaut:
     name: micronaut-camunda-external-client-feature-test
 camunda:
   external-client:
-    base-url: http://localhost:8080/engine-rest
+    base-url: http://localhost:8081/engine-rest
     worker-id: test-worker
     subscriptions:
-      test-topic-configuration:
-        lock-duration: 29000
+      test-topic-annotation:
+        lockDuration: 29000
         variables:
           - conf-test-one
           - conf-test-two
