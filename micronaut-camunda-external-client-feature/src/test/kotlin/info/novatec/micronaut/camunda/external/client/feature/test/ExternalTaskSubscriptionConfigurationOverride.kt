@@ -37,15 +37,15 @@ class ExternalTaskSubscriptionConfigurationOverride {
         val topicName = "test-topic-annotation"
         val subscription = this.getSubscription(topicName)
 
-        assertThat(subscription!!.topicName).isEqualTo(topicName)
+        assertThat(subscription.topicName).isEqualTo(topicName)
         assertThat(subscription.lockDuration).isEqualTo(29000)
         assertThat(subscription.variableNames).containsExactly("conf-test-one", "conf-test-two")
         assertThat(subscription.isLocalVariables).isTrue
     }
 
-    private fun getSubscription(topicName: String): TopicSubscription? {
+    private fun getSubscription(topicName: String): TopicSubscription {
         val client = externalTaskClient as ExternalTaskClientImpl
         val subscriptions = client.topicSubscriptionManager.subscriptions
-        return subscriptions.find { it.topicName == topicName }
+        return subscriptions.find { it.topicName == topicName }!!
     }
 }

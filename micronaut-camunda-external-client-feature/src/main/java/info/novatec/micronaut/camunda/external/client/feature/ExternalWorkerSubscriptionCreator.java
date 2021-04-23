@@ -55,7 +55,7 @@ public class ExternalWorkerSubscriptionCreator {
         if (annotationValue == null) {
             log.warn("Skipping subscription. Could not find Annotation ExternalTaskSubscription on class {}", beanDefinition.getName());
         } else {
-            TopicSubscriptionBuilder builder = buildTopicSubscription(externalTaskHandler, externalTaskClient, annotationValue);
+            TopicSubscriptionBuilder builder = createTopicSubscription(externalTaskHandler, externalTaskClient, annotationValue);
 
             //noinspection OptionalGetWithoutIsPresent
             String topicName = annotationValue.stringValue("topicName").get();
@@ -70,7 +70,7 @@ public class ExternalWorkerSubscriptionCreator {
         }
     }
 
-    protected TopicSubscriptionBuilder buildTopicSubscription(ExternalTaskHandler externalTaskHandler, ExternalTaskClient client, AnnotationValue<ExternalTaskSubscription> annotationValue) {
+    protected TopicSubscriptionBuilder createTopicSubscription(ExternalTaskHandler externalTaskHandler, ExternalTaskClient client, AnnotationValue<ExternalTaskSubscription> annotationValue) {
         //noinspection OptionalGetWithoutIsPresent
         TopicSubscriptionBuilder builder = client.subscribe(annotationValue.stringValue("topicName").get());
 
@@ -138,8 +138,8 @@ public class ExternalWorkerSubscriptionCreator {
             builder.variables(topicConfiguration.getVariables());
         }
 
-        if (topicConfiguration.getLocalVariables() != null) {
-            builder.localVariables(topicConfiguration.getLocalVariables());
+        if (topicConfiguration.isLocalVariables()) {
+            builder.localVariables(topicConfiguration.isLocalVariables());
         }
 
         if (topicConfiguration.getBusinessKey() != null) {
@@ -166,7 +166,7 @@ public class ExternalWorkerSubscriptionCreator {
             builder.processDefinitionVersionTag(topicConfiguration.getProcessDefinitionVersionTag());
         }
 
-        if (topicConfiguration.getWithoutTenantId() != null && topicConfiguration.getWithoutTenantId()) {
+        if (topicConfiguration.isWithoutTenantId()) {
             builder.withoutTenantId();
         }
 
@@ -174,8 +174,8 @@ public class ExternalWorkerSubscriptionCreator {
             builder.tenantIdIn(topicConfiguration.getTenantIdIn());
         }
 
-        if (topicConfiguration.getIncludeExtensionProperties() != null && topicConfiguration.getIncludeExtensionProperties()) {
-            builder.includeExtensionProperties(topicConfiguration.getIncludeExtensionProperties());
+        if (topicConfiguration.hasIncludeExtensionProperties()) {
+            builder.includeExtensionProperties(topicConfiguration.hasIncludeExtensionProperties());
         }
     }
 }

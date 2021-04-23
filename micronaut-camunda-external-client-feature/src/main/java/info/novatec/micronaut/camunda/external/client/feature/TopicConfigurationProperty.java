@@ -17,7 +17,8 @@ package info.novatec.micronaut.camunda.external.client.feature;
 
 import io.micronaut.context.annotation.EachProperty;
 import io.micronaut.context.annotation.Parameter;
-import io.micronaut.core.annotation.AnnotationValue;
+
+import java.util.Optional;
 
 /**
  * @author Luc Weinbrecht
@@ -67,11 +68,11 @@ public class TopicConfigurationProperty {
         this.variables = variables;
     }
 
-    public Boolean getLocalVariables() {
-        return localVariables;
+    public boolean isLocalVariables() {
+        return Optional.ofNullable(localVariables).orElse(false);
     }
 
-    public void setLocalVariables(Boolean localVariables) {
+    public void setLocalVariables(boolean localVariables) {
         this.localVariables = localVariables;
     }
 
@@ -123,11 +124,11 @@ public class TopicConfigurationProperty {
         this.processDefinitionVersionTag = processDefinitionVersionTag;
     }
 
-    public Boolean getWithoutTenantId() {
-        return withoutTenantId;
+    public boolean isWithoutTenantId() {
+        return Optional.ofNullable(withoutTenantId).orElse(false);
     }
 
-    public void setWithoutTenantId(Boolean withoutTenantId) {
+    public void setWithoutTenantId(boolean withoutTenantId) {
         this.withoutTenantId = withoutTenantId;
     }
 
@@ -139,11 +140,11 @@ public class TopicConfigurationProperty {
         this.tenantIdIn = tenantIdIn;
     }
 
-    public Boolean getIncludeExtensionProperties() {
-        return includeExtensionProperties;
+    public boolean hasIncludeExtensionProperties() {
+        return Optional.ofNullable(includeExtensionProperties).orElse(false);
     }
 
-    public void setIncludeExtensionProperties(Boolean includeExtensionProperties) {
+    public void setIncludeExtensionProperties(boolean includeExtensionProperties) {
         this.includeExtensionProperties = includeExtensionProperties;
     }
 }
