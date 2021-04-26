@@ -39,11 +39,14 @@ public class ExternalWorkerSubscriptionCreator {
 
     protected final BeanContext beanContext;
     protected final ExternalTaskClient externalTaskClient;
+    protected final TopicConfigurationMapper topicConfigurationMapper;
 
     public ExternalWorkerSubscriptionCreator(BeanContext beanContext,
-                                             ExternalTaskClient externalTaskClient) {
+                                             ExternalTaskClient externalTaskClient,
+                                             TopicConfigurationMapper topicConfigurationMapper) {
         this.beanContext = beanContext;
         this.externalTaskClient = externalTaskClient;
+        this.topicConfigurationMapper = topicConfigurationMapper;
 
         beanContext.getBeanDefinitions(ExternalTaskHandler.class).forEach(this::registerExternalTaskHandler);
     }
@@ -55,127 +58,52 @@ public class ExternalWorkerSubscriptionCreator {
         if (annotationValue == null) {
             log.warn("Skipping subscription. Could not find Annotation ExternalTaskSubscription on class {}", beanDefinition.getName());
         } else {
-            TopicSubscriptionBuilder builder = createTopicSubscription(externalTaskHandler, externalTaskClient, annotationValue);
+            TopicConfiguration topicConfiguration = this.topicConfigurationMapper.mapToTopicConfiguration(annotationValue);
 
-            //noinspection OptionalGetWithoutIsPresent
-            String topicName = annotationValue.stringValue("topicName").get();
+            String topicName = topicConfiguration.getTopicName();
 
             if (beanContext.containsBean(TopicConfigurationProperty.class, Qualifiers.byName(topicName))) {
                 TopicConfigurationProperty topicConfigurationProperties = beanContext.getBean(TopicConfigurationProperty.class, Qualifiers.byName(topicName));
-                overrideAnnotationWithConfigurationProperties(topicConfigurationProperties, builder);
+                topicConfiguration.overrideIfExists(this.topicConfigurationMapper.mapToTopicConfiguration(topicConfigurationProperties));
             }
 
-            builder.open();
-            log.info("External task client subscribed to topic '{}'", topicName);
+            buildTopicSubscription(externalTaskHandler, topicConfiguration);
         }
     }
 
-    protected TopicSubscriptionBuilder createTopicSubscription(ExternalTaskHandler externalTaskHandler, ExternalTaskClient client, AnnotationValue<ExternalTaskSubscription> annotationValue) {
+    protected void buildTopicSubscription(ExternalTaskHandler externalTaskHandler, TopicConfiguration topicConfiguration) {
         //noinspection OptionalGetWithoutIsPresent
-        TopicSubscriptionBuilder builder = client.subscribe(annotationValue.stringValue("topicName").get());
+        TopicSubscriptionBuilder builder = externalTaskClient.subscribe(topicConfiguration.getTopicName());
 
         builder.handler(externalTaskHandler);
 
-        annotationValue.longValue("lockDuration").ifPresent(builder::lockDuration);
+        builder.lockDuration(topicConfiguration.getLockDuration());
 
-        annotationValue.get("variables", String[].class).ifPresent(it -> {
-            if (!it[0].equals("")) {
-                builder.variables(it);
-            }
-        });
+        builder.variables(topicConfiguration.getVariables());
 
-        annotationValue.booleanValue("localVariables").ifPresent(builder::localVariables);
+        builder.localVariables(topicConfiguration.isLocalVariables());
 
-        annotationValue.stringValue("businessKey").ifPresent(builder::businessKey);
+        builder.businessKey(topicConfiguration.getBusinessKey());
 
-        annotationValue.stringValue("processDefinitionId").ifPresent(builder::processDefinitionId);
+        builder.processDefinitionId((topicConfiguration.getProcessDefinitionId()));
 
-        annotationValue.get("processDefinitionIdIn", String[].class).ifPresent(it -> {
-            if (!it[0].equals("")) {
-                builder.processDefinitionIdIn(it);
-            }
-        });
+        builder.processDefinitionIdIn(topicConfiguration.getProcessDefinitionIdIn());
 
-        annotationValue.stringValue("processDefinitionKey").ifPresent(builder::processDefinitionKey);
+        builder.processDefinitionKey(topicConfiguration.getProcessDefinitionKey());
 
-        annotationValue.get("processDefinitionKeyIn", String[].class).ifPresent(it -> {
-            if (!it[0].equals("")) {
-                builder.processDefinitionKeyIn(it);
-            }
-        });
+        builder.processDefinitionKeyIn(topicConfiguration.getProcessDefinitionKeyIn());
 
-        annotationValue.stringValue("processDefinitionVersionTag").ifPresent(builder::processDefinitionVersionTag);
-
-        annotationValue.booleanValue("withoutTenantId").ifPresent(it -> {
-            if (it) {
-                builder.withoutTenantId();
-            }
-        });
-
-        annotationValue.get("tenantIdIn", String[].class).ifPresent(it -> {
-            if (!it[0].equals("")) {
-                builder.tenantIdIn(it);
-            }
-        });
-
-        annotationValue.booleanValue("includeExtensionProperties").ifPresent(builder::includeExtensionProperties);
-
-        return builder;
-    }
-
-    protected void overrideAnnotationWithConfigurationProperties(TopicConfigurationProperty topicConfiguration, TopicSubscriptionBuilder builder) {
-        log.info("External configuration for topic {} found. Overriding annotation values", topicConfiguration.getTopicName());
-
-        if (topicConfiguration.getLockDuration() != null) {
-            builder.lockDuration(topicConfiguration.getLockDuration());
-        }
-
-        if (topicConfiguration.getVariables() != null) {
-            builder.variables(topicConfiguration.getVariables());
-        }
-
-        if (topicConfiguration.getVariables() != null) {
-            builder.variables(topicConfiguration.getVariables());
-        }
-
-        if (topicConfiguration.isLocalVariables()) {
-            builder.localVariables(topicConfiguration.isLocalVariables());
-        }
-
-        if (topicConfiguration.getBusinessKey() != null) {
-            builder.businessKey((topicConfiguration.getBusinessKey()));
-        }
-
-        if (topicConfiguration.getProcessDefinitionId() != null) {
-            builder.processDefinitionId(topicConfiguration.getProcessDefinitionId());
-        }
-
-        if (topicConfiguration.getProcessDefinitionIdIn() != null) {
-            builder.processDefinitionIdIn(topicConfiguration.getProcessDefinitionIdIn());
-        }
-
-        if (topicConfiguration.getProcessDefinitionKey() != null) {
-            builder.processDefinitionKey(topicConfiguration.getProcessDefinitionKey());
-        }
-
-        if (topicConfiguration.getProcessDefinitionKeyIn() != null) {
-            builder.processDefinitionKeyIn(topicConfiguration.getProcessDefinitionKeyIn());
-        }
-
-        if (topicConfiguration.getProcessDefinitionVersionTag() != null) {
-            builder.processDefinitionVersionTag(topicConfiguration.getProcessDefinitionVersionTag());
-        }
+        builder.processDefinitionVersionTag(topicConfiguration.getProcessDefinitionVersionTag());
 
         if (topicConfiguration.isWithoutTenantId()) {
             builder.withoutTenantId();
         }
 
-        if (topicConfiguration.getTenantIdIn() != null) {
-            builder.tenantIdIn(topicConfiguration.getTenantIdIn());
-        }
+        builder.tenantIdIn(topicConfiguration.getTenantIdIn());
 
-        if (topicConfiguration.hasIncludeExtensionProperties()) {
-            builder.includeExtensionProperties(topicConfiguration.hasIncludeExtensionProperties());
-        }
+        builder.includeExtensionProperties(topicConfiguration.hasIncludeExtensionProperties());
+
+        builder.open();
+        log.info("External task client subscribed to topic '{}'", topicConfiguration.getTopicName());
     }
 }
